@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Quán Cafe</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: #f5f5f5; color: #333; line-height: 1.5; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
+        header { background: #2c3e50; color: white; padding: 18px 20px; border-radius: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        header h1 { font-size: 1.6rem; }
+        .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 18px; border: none; background: #ddd; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .tab-btn.active { background: #e67e22; color: white; }
+        .tab-content { display: none; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .tab-content.active { display: block; }
+        h2 { margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #e67e22; padding-bottom: 6px; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; font-weight: 600; }
+        tr:hover { background: #fafafa; }
+        .btn { padding: 8px 14px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; margin: 2px; }
+        .btn-primary { background: #e67e22; color: white; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-secondary { background: #95a5a6; color: white; }
+        .btn:hover { opacity: 0.9; }
+        .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+        input, select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 0.95rem; }
+        input[type="number"] { width: 100px; }
+        .status-trong { color: #27ae60; font-weight: 600; }
+        .status-phucvu { color: #e67e22; font-weight: 600; }
+        .status-thanhtoan { color: #3498db; font-weight: 600; }
+        .card { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .total { font-size: 1.3rem; font-weight: 700; color: #e74c3c; }
+        .alert { padding: 12px; border-radius: 6px; margin: 10px 0; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+        .stats-box { display: flex; gap: 20px; flex-wrap: wrap; }
+        .stat-item { background: #2c3e50; color: white; padding: 20px; border-radius: 8px; min-width: 180px; text-align: center; }
+        .stat-item .number { font-size: 1.8rem; font-weight: 700; }
+        @media (max-width: 600px) {
+            .form-row { flex-direction: column; align-items: stretch; }
+            input, select { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>☕ Quản lý Quán Cafe</h1>
+        <div id="current-time"></div>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('drinks')">Đồ uống</button>
+        <button class="tab-btn" onclick="showTab('tables')">Bàn</button>
+        <button class="tab-btn" onclick="showTab('staff')">Nhân viên</button>
+        <button class="tab-btn" onclick="showTab('order')">Gọi món / Hóa đơn</button>
+        <button class="tab-btn" onclick="showTab('stats')">Thống kê</button>
+    </div>
+
+    <!-- TAB ĐỒ UỐNG -->
+    <div id="drinks" class="tab-content active">
+        <h2>Quản lý đồ uống & giá bán</h2>
+        <div class="form-row">
+            <input type="text" id="drink-name" placeholder="Tên đồ uống">
+            <input type="number" id="drink-price" placeholder="Giá bán" min="0">
+            <button class="btn btn-primary" onclick="addDrink()">Thêm</button>
+        </div>
+        <table id="drinks-table">
+            <thead>
+                <tr><th>ID</th><th>Tên</th><th>Giá</th><th>Thao tác</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- TAB BÀN -->
+    <div id="tables" class="tab-content">
+        <h2>Quản lý bàn & trạng thái</h2>
+        <div class="form-row">
+            <input type="text" id="table-name" placeholder="Tên bàn (vd: Bàn 11)">
+            <button class="btn btn-primary" onclick="addTable()">Thêm bàn</button>
+        </div>
+        <table id="tables-table">
+            <thead>
+                <tr><th>ID</th><th>Tên bàn</th><th>Trạng thái</th><th>Thao tác</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- TAB NHÂN VIÊN -->
+    <div id="staff" class="tab-content">
+        <h2>Quản lý nhân viên</h2>
+        <div class="form-row">
+            <input type="text" id="staff-name" placeholder="Họ tên">
+            <input type="text" id="staff-phone" placeholder="Số điện thoại">
+            <input type="text" id="staff-role" placeholder="Vai trò" value="Nhân viên">
+            <button class="btn btn-primary" onclick="addStaff()">Thêm</button>
+        </div>
+        <table id="staff-table">
+            <thead>
+                <tr><th>ID</th><th>Họ tên</th><th>SĐT</th><th>Vai trò</th><th>Thao tác</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- TAB GỌI MÓN / HÓA ĐƠN -->
+    <div id="order" class="tab-content">
+        <h2>Gọi món & Tạo hóa đơn</h2>
+        
+        <div class="card">
+            <div class="form-row">
+                <label>Chọn bàn:</label>
+                <select id="order-table"></select>
+                <label>Nhân viên:</label>
+                <select id="order-staff"></select>
+                <button class="btn btn-primary" onclick="createOrder()">Tạo / Mở hóa đơn</button>
+            </div>
+        </div>
+
+        <div id="current-order-section" style="display:none;">
+            <h3>Hóa đơn #<span id="current-order-id"></span></h3>
+            <div class="form-row">
+                <select id="order-drink"></select>
+                <input type="number" id="order-qty" value="1" min="1" style="width:80px">
+                <button class="btn btn-success" onclick="addItemToOrder()">Thêm món</button>
+            </div>
+            <table id="order-items-table">
+                <thead>
+                    <tr><th>Tên món</th><th>SL</th><th>Đơn giá</th><th>Thành tiền</th><th></th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <p class="total">Tổng cộng: <span id="order-total">0</span> đ</p>
+            <button class="btn btn-success" onclick="payOrder()">Thanh toán</button>
+            <button class="btn btn-secondary" onclick="closeCurrentOrder()">Đóng</button>
+        </div>
+
+        <h3 style="margin-top:30px;">Danh sách hóa đơn gần đây</h3>
+        <table id="orders-table">
+            <thead>
+                <tr><th>ID</th><th>Bàn</th><th>Nhân viên</th><th>Thời gian</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thao tác</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- TAB THỐNG KÊ -->
+    <div id="stats" class="tab-content">
+        <h2>Thống kê doanh thu</h2>
+        <div class="form-row">
+            <label>Ngày:</label>
+            <input type="date" id="stat-date">
+            <button class="btn btn-primary" onclick="showRevenueByDay()">Xem theo ngày</button>
+        </div>
+        <div class="form-row">
+            <label>Tháng:</label>
+            <input type="month" id="stat-month">
+            <button class="btn btn-primary" onclick="showRevenueByMonth()">Xem theo tháng</button>
+        </div>
+        <div class="stats-box" id="stats-result"></div>
+    </div>
+</div>
+
+<script>
+// ==================== DỮ LIỆU ====================
+let data = {
+    drinks: [],
+    tables: [],
+    staff: [],
+    orders: [],
+    nextId: { drink: 1, table: 1, staff: 1, order: 1 }
+};
+
+let currentOrderId = null;
+
+// Load dữ liệu từ localStorage
+function loadData() {
+    const saved = localStorage.getItem('cafeData');
+    if (saved) {
+        data = JSON.parse(saved);
+    } else {
+        // Dữ liệu mẫu lần đầu
+        data.drinks = [
+            { id: 1, name: "Cà phê đen", price: 25000 },
+            { id: 2, name: "Cà phê sữa", price: 30000 },
+            { id: 3, name: "Bạc xỉu", price: 35000 },
+            { id: 4, name: "Trà đào", price: 40000 },
+            { id: 5, name: "Nước cam", price: 35000 },
+            { id: 6, name: "Sinh tố bơ", price: 45000 }
+        ];
+        data.tables = [];
+        for (let i = 1; i <= 10; i++) {
+            data.tables.push({ id: i, name: `Bàn ${i}`, status: "Trống" });
+        }
+        data.staff = [
+            { id: 1, name: "Nguyễn Văn A", phone: "0901234567", role: "Quản lý" },
+            { id: 2, name: "Trần Thị B", phone: "0912345678", role: "Nhân viên" },
+            { id: 3, name: "Lê Văn C", phone: "0923456789", role: "Nhân viên" }
+        ];
+        data.nextId = { drink: 7, table: 11, staff: 4, order: 1 };
+        saveData();
+    }
+}
+
+function saveData() {
+    localStorage.setItem('cafeData', JSON.stringify(data));
+}
+
+// ==================== TAB ====================
+function showTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    event.target.classList.add('active');
+    
+    if (tabId === 'drinks') renderDrinks();
+    if (tabId === 'tables') renderTables();
+    if (tabId === 'staff') renderStaff();
+    if (tabId === 'order') {
+        renderOrderSelects();
+        renderOrders();
+    }
+    if (tabId === 'stats') {
+        document.getElementById('stat-date').valueAsDate = new Date();
+        const now = new Date();
+        document.getElementById('stat-month').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    }
+}
+
+// ==================== ĐỒ UỐNG ====================
+function renderDrinks() {
+    const tbody = document.querySelector('#drinks-table tbody');
+    tbody.innerHTML = data.drinks.map(d => `
+        <tr>
+            <td>${d.id}</td>
+            <td>${d.name}</td>
+            <td>${d.price.toLocaleString('vi-VN')} đ</td>
+            <td>
+                <button class="btn btn-secondary" onclick="editDrink(${d.id})">Sửa</button>
+                <button class="btn btn-danger" onclick="deleteDrink(${d.id})">Xóa</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function addDrink() {
+    const name = document.getElementById('drink-name').value.trim();
+    const price = parseFloat(document.getElementById('drink-price').value);
+    if (!name) return alert('Vui lòng nhập tên đồ uống');
+    if (isNaN(price) || price < 0) return alert('Giá không hợp lệ');
+    if (data.drinks.some(d => d.name.toLowerCase() === name.toLowerCase())) {
+        return alert('Tên đồ uống đã tồn tại');
+    }
+    data.drinks.push({ id: data.nextId.drink++, name, price });
+    saveData();
+    document.getElementById('drink-name').value = '';
+    document.getElementById('drink-price').value = '';
+    renderDrinks();
+}
+
+function editDrink(id) {
+    const d = data.drinks.find(x => x.id === id);
+    if (!d) return;
+    const newName = prompt('Tên mới:', d.name);
+    if (newName === null) return;
+    const newPrice = prompt('Giá mới:', d.price);
+    if (newPrice === null) return;
+    const price = parseFloat(newPrice);
+    if (isNaN(price) || price < 0) return alert('Giá không hợp lệ');
+    d.name = newName.trim() || d.name;
+    d.price = price;
+    saveData();
+    renderDrinks();
+}
+
+function deleteDrink(id) {
+    const used = data.orders.some(o => o.items.some(i => i.drinkId === id));
+    if (used) return alert('Không thể xóa vì đồ uống đã có trong hóa đơn');
+    if (!confirm('Xác nhận xóa?')) return;
+    data.drinks = data.drinks.filter(d => d.id !== id);
+    saveData();
+    renderDrinks();
+}
+
+// ==================== BÀN ====================
+function renderTables() {
+    const tbody = document.querySelector('#tables-table tbody');
+    tbody.innerHTML = data.tables.map(t => {
+        let cls = 'status-trong';
+        if (t.status === 'Đang phục vụ') cls = 'status-phucvu';
+        if (t.status === 'Đã thanh toán') cls = 'status-thanhtoan';
+        return `
+            <tr>
+                <td>${t.id}</td>
+                <td>${t.name}</td>
+                <td class="${cls}">${t.status}</td>
+                <td>
+                    <select onchange="changeTableStatus(${t.id}, this.value)">
+                        <option value="Trống" ${t.status==='Trống'?'selected':''}>Trống</option>
+                        <option value="Đang phục vụ" ${t.status==='Đang phục vụ'?'selected':''}>Đang phục vụ</option>
+                        <option value="Đã thanh toán" ${t.status==='Đã thanh toán'?'selected':''}>Đã thanh toán</option>
+                    </select>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function addTable() {
+    const name = document.getElementById('table-name').value.trim();
+    if (!name) return alert('Nhập tên bàn');
+    if (data.tables.some(t => t.name === name)) return alert('Tên bàn đã tồn tại');
+    data.tables.push({ id: data.nextId.table++, name, status: 'Trống' });
+    saveData();
+    document.getElementById('table-name').value = '';
+    renderTables();
+}
+
+function changeTableStatus(id, status) {
+    const t = data.tables.find(x => x.id === id);
+    if (t) {
+        t.status = status;
+        saveData();
+        renderTables();
+    }
+}
+
+// ==================== NHÂN VIÊN ====================
+function renderStaff() {
+    const tbody = document.querySelector('#staff-table tbody');
+    tbody.innerHTML = data.staff.map(s => `
+        <tr>
+            <td>${s.id}</td>
+            <td>${s.name}</td>
+            <td>${s.phone || '-'}</td>
+            <td>${s.role}</td>
+            <td>
+                <button class="btn btn-secondary" onclick="editStaff(${s.id})">Sửa</button>
+                <button class="btn btn-danger" onclick="deleteStaff(${s.id})">Xóa</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function addStaff() {
+    const name = document.getElementById('staff-name').value.trim();
+    const phone = document.getElementById('staff-phone').value.trim();
+    const role = document.getElementById('staff-role').value.trim() || 'Nhân viên';
+    if (!name) return alert('Nhập họ tên');
+    data.staff.push({ id: data.nextId.staff++, name, phone, role });
+    saveData();
+    document.getElementById('staff-name').value = '';
+    document.getElementById('staff-phone').value = '';
+    renderStaff();
+}
+
+function editStaff(id) {
+    const s = data.staff.find(x => x.id === id);
+    if (!s) return;
+    const name = prompt('Họ tên:', s.name);
+    if (name === null) return;
+    const phone = prompt('SĐT:', s.phone);
+    if (phone === null) return;
+    const role = prompt('Vai trò:', s.role);
+    if (role === null) return;
+    s.name = name.trim() || s.name;
+    s.phone = phone.trim();
+    s.role = role.trim() || s.role;
+    saveData();
+    renderStaff();
+}
+
+function deleteStaff(id) {
+    if (!confirm('Xác nhận xóa nhân viên?')) return;
+    data.staff = data.staff.filter(s => s.id !== id);
+    saveData();
+    renderStaff();
+}
+
+// ==================== HÓA ĐƠN ====================
+function renderOrderSelects() {
+    const tableSelect = document.getElementById('order-table');
+    const staffSelect = document.getElementById('order-staff');
+    const drinkSelect = document.getElementById('order-drink');
+    
+    tableSelect.innerHTML = data.tables.map(t => 
+        `<option value="${t.id}">${t.name} (${t.status})</option>`
+    ).join('');
+    
+    staffSelect.innerHTML = '<option value="">-- Không chọn --</option>' + 
+        data.staff.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    
+    drinkSelect.innerHTML = data.drinks.map(d => 
+        `<option value="${d.id}">${d.name} - ${d.price.toLocaleString('vi-VN')}đ</option>`
+    ).join('');
+}
+
+function createOrder() {
+    const tableId = parseInt(document.getElementById('order-table').value);
+    const staffId = document.getElementById('order-staff').value ? parseInt(document.getElementById('order-staff').value) : null;
+    
+    // Tìm hóa đơn chưa thanh toán của bàn
+    let order = data.orders.find(o => o.tableId === tableId && o.status === 'Chưa thanh toán');
+    
+    if (!order) {
+        order = {
+            id: data.nextId.order++,
+            tableId,
+            staffId,
+            createdAt: new Date().toISOString(),
+            status: 'Chưa thanh toán',
+            items: [],
+            total: 0
+        };
+        data.orders.push(order);
+        
+        const table = data.tables.find(t => t.id === tableId);
+        if (table) table.status = 'Đang phục vụ';
+    }
+    
+    currentOrderId = order.id;
+    saveData();
+    showCurrentOrder();
+    renderOrders();
+    renderTables();
+}
+
+function showCurrentOrder() {
+    const order = data.orders.find(o => o.id === currentOrderId);
+    if (!order) return;
+    
+    document.getElementById('current-order-section').style.display = 'block';
+    document.getElementById('current-order-id').textContent = order.id;
+    
+    const tbody = document.querySelector('#order-items-table tbody');
+    tbody.innerHTML = order.items.map((item, idx) => {
+        const drink = data.drinks.find(d => d.id === item.drinkId);
+        const subtotal = item.quantity * item.unitPrice;
+        return `
+            <tr>
+                <td>${drink ? drink.name : 'N/A'}</td>
+                <td>${item.quantity}</td>
+                <td>${item.unitPrice.toLocaleString('vi-VN')} đ</td>
+                <td>${subtotal.toLocaleString('vi-VN')} đ</td>
+                <td><button class="btn btn-danger" onclick="removeItem(${idx})">Xóa</button></td>
+            </tr>
+        `;
+    }).join('');
+    
+    recalculateTotal(order);
+    document.getElementById('order-total').textContent = order.total.toLocaleString('vi-VN');
+}
+
+function addItemToOrder() {
+    if (!currentOrderId) return alert('Chưa có hóa đơn');
+    const order = data.orders.find(o => o.id === currentOrderId);
+    if (order.status === 'Đã thanh toán') return alert('Hóa đơn đã thanh toán');
+    
+    const drinkId = parseInt(document.getElementById('order-drink').value);
+    const qty = parseInt(document.getElementById('order-qty').value);
+    if (qty <= 0) return alert('Số lượng phải > 0');
+    
+    const drink = data.drinks.find(d => d.id === drinkId);
+    if (!drink) return;
+    
+    order.items.push({
+        drinkId,
+        quantity: qty,
+        unitPrice: drink.price
+    });
+    
+    recalculateTotal(order);
+    saveData();
+    showCurrentOrder();
+}
+
+function removeItem(idx) {
+    const order = data.orders.find(o => o.id === currentOrderId);
+    if (!order || order.status === 'Đã thanh toán') return;
+    order.items.splice(idx, 1);
+    recalculateTotal(order);
+    saveData();
+    showCurrentOrder();
+}
+
+function recalculateTotal(order) {
+    order.total = order.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+}
+
+function payOrder() {
+    if (!currentOrderId) return;
+    const order = data.orders.find(o => o.id === currentOrderId);
+    if (!order) return;
+    if (order.status === 'Đã thanh toán') return alert('Đã thanh toán rồi');
+    if (order.items.length === 0) return alert('Hóa đơn trống');
+    
+    if (!confirm(`Xác nhận thanh toán ${order.total.toLocaleString('vi-VN')} đ?`)) return;
+    
+    recalculateTotal(order); // Tính lại lần cuối để chắc chắn
+    order.status = 'Đã thanh toán';
+    
+    const table = data.tables.find(t => t.id === order.tableId);
+    if (table) table.status = 'Đã thanh toán';
+    
+    saveData();
+    alert('Thanh toán thành công!');
+    closeCurrentOrder();
+    renderOrders();
+    renderTables();
+}
+
+function closeCurrentOrder() {
+    currentOrderId = null;
+    document.getElementById('current-order-section').style.display = 'none';
+}
+
+function renderOrders() {
+    const tbody = document.querySelector('#orders-table tbody');
+    const sorted = [...data.orders].sort((a, b) => b.id - a.id).slice(0, 20);
+    
+    tbody.innerHTML = sorted.map(o => {
+        const table = data.tables.find(t => t.id === o.tableId);
+        const staff = data.staff.find(s => s.id === o.staffId);
+        const time = new Date(o.createdAt).toLocaleString('vi-VN');
+        return `
+            <tr>
+                <td>${o.id}</td>
+                <td>${table ? table.name : o.tableId}</td>
+                <td>${staff ? staff.name : '-'}</td>
+                <td>${time}</td>
+                <td>${o.total.toLocaleString('vi-VN')} đ</td>
+                <td>${o.status}</td>
+                <td>
+                    <button class="btn btn-secondary" onclick="viewOrder(${o.id})">Xem</button>
+                    ${o.status === 'Chưa thanh toán' ? `<button class="btn btn-primary" onclick="openOrder(${o.id})">Mở</button>` : ''}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function viewOrder(id) {
+    const order = data.orders.find(o => o.id === id);
+    if (!order) return;
+    let msg = `Hóa đơn #${order.id}\nTrạng thái: ${order.status}\nTổng: ${order.total.toLocaleString('vi-VN')} đ\n\nChi tiết:\n`;
+    order.items.forEach(item => {
+        const drink = data.drinks.find(d => d.id === item.drinkId);
+        msg += `- ${drink?.name || 'N/A'} x${item.quantity} = ${(item.quantity*item.unitPrice).toLocaleString('vi-VN')}đ\n`;
+    });
+    alert(msg);
+}
+
+function openOrder(id) {
+    currentOrderId = id;
+    showCurrentOrder();
+}
+
+// ==================== THỐNG KÊ ====================
+function showRevenueByDay() {
+    const dateStr = document.getElementById('stat-date').value;
+    if (!dateStr) return alert('Chọn ngày');
+    
+    const orders = data.orders.filter(o => {
+        if (o.status !== 'Đã thanh toán') return false;
+        const d = new Date(o.createdAt);
+        return d.toISOString().slice(0,10) === dateStr;
+    });
+    
+    const total = orders.reduce((sum, o) => sum + o.total, 0);
+    document.getElementById('stats-result').innerHTML = `
+        <div class="stat-item">
+            <div>Ngày ${dateStr}</div>
+            <div class="number">${orders.length}</div>
+            <div>Hóa đơn</div>
+        </div>
+        <div class="stat-item">
+            <div>Doanh thu</div>
+            <div class="number">${total.toLocaleString('vi-VN')}</div>
+            <div>đồng</div>
+        </div>
+    `;
+}
+
+function showRevenueByMonth() {
+    const monthStr = document.getElementById('stat-month').value; // YYYY-MM
+    if (!monthStr) return alert('Chọn tháng');
+    
+    const orders = data.orders.filter(o => {
+        if (o.status !== 'Đã thanh toán') return false;
+        const d = new Date(o.createdAt);
+        const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        return ym === monthStr;
+    });
+    
+    const total = orders.reduce((sum, o) => sum + o.total, 0);
+    document.getElementById('stats-result').innerHTML = `
+        <div class="stat-item">
+            <div>Tháng ${monthStr}</div>
+            <div class="number">${orders.length}</div>
+            <div>Hóa đơn</div>
+        </div>
+        <div class="stat-item">
+            <div>Doanh thu</div>
+            <div class="number">${total.toLocaleString('vi-VN')}</div>
+            <div>đồng</div>
+        </div>
+    `;
+}
+
+// ==================== KHỞI TẠO ====================
+function updateTime() {
+    document.getElementById('current-time').textContent = new Date().toLocaleString('vi-VN');
+}
+
+loadData();
+renderDrinks();
+updateTime();
+setInterval(updateTime, 1000);
+</script>
+</body>
+</html>
